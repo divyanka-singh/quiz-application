@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quiz App</title>
+</head>
+<body>
+  <h1>Create a Quiz</h1>
+  <form id="createQuizForm">
+    <label for="question">Question:</label>
+    <input type="text" id="question" name="question" required><br>
+
+    <label for="options">Options (separated by commas):</label>
+    <input type="text" id="options" name="options" required><br>
+
+    <label for="rightAnswer">Index of Right Answer:</label>
+    <input type="number" id="rightAnswer" name="rightAnswer" required><br>
+
+    <label for="startDate">Start Date (YYYY-MM-DD HH:MM:SS):</label>
+    <input type="text" id="startDate" name="startDate" required><br>
+
+    <label for="endDate">End Date (YYYY-MM-DD HH:MM:SS):</label>
+    <input type="text" id="endDate" name="endDate" required><br>
+
+    <input type="submit" value="Create Quiz">
+  </form>
+
+  <h1>Active Quiz</h1>
+  <div id="activeQuizContainer"></div>
+
+  <h1>Quiz Result</h1>
+  <div id="quizResultContainer"></div>
+
+  <script>
+    const createQuizForm = document.getElementById('createQuizForm');
+    const activeQuizContainer = document.getElementById('activeQuizContainer');
+    const quizResultContainer = document.getElementById('quizResultContainer');
+
+    createQuizForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const formData = new FormData(createQuizForm);
+      const quizData = {
+        question: formData.get('question'),
+        options: formData.get('options').split(',').map(option => option.trim()),
+        rightAnswer: parseInt(formData.get('rightAnswer')),
+        startDate: formData.get('startDate'),
+        endDate: formData.get('endDate')
+      };
+
+      fetch('/quizzes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(quizData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data.message);
+        createQuizForm.reset();
+      })
+      .catch(error => console.error(error));
+    });
+
+    function getActiveQuiz() {
+      fetch('/quizzes/active')
+      .then(response => response.json())
+      .then(data => {
+        if (data.message) {
+          activeQuizContainer.innerHTML = data.message;
+        } else {
+          activeQuizContainer.innerHTML = `
+            <h3>Question: ${data.question}</h3>
+            <ul>
+              ${data.options.map((option, index) => `
+                <li>${index}: ${option}</li>
+              `).join('')}
+            </ul>
+          `;
+        }
+      })
+      .catch(error => console.error(error));
+    }
+
+    function getQuizResult(quizId) {
+      fetch(`/quizzes/${quizId}/result`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.message) {
+          quizResultContainer.innerHTML = data.message;
+        } else {
+          quizResultContainer.innerHTML = `Result: ${data.result}`;
+        }
+      })
+      .catch(error => console.error(error));
+    }
+
+    getActiveQuiz();
+    setInterval(getActiveQuiz, 5000); // Refresh active quiz every 5 seconds
+  </script>
+</body>
+</html>
